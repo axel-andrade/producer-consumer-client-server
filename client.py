@@ -14,7 +14,7 @@ def Main():
     s.connect((host, port))
 
     counter = 0
-    while counter <= 10:
+    while counter <= 5:
 
         # message sent to server
         s.send(str(counter).encode('ascii'))
