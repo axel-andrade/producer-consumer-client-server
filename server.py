@@ -53,52 +53,46 @@ class ProducerThread(Thread):
 
         while True:
             data = self.conn.recv(2048)
-            print("Servidor recebeu:", data)
-            condition.acquire()
-            if len(queue) == MAX_NUM:
-                print("Fila cheia, o produtor está aguardando")
-                condition.wait()
-                print("Espaço na fila, consumidor notificou o produtor")
             data = data.decode('ascii')
             if len(data) > 0:
+                print("Servidor recebeu:", data)
+                condition.acquire()
+                if len(queue) == MAX_NUM:
+                    print("Fila cheia, o produtor está aguardando")
+                    condition.wait()
+                    print("Espaço na fila, consumidor notificou o produtor")
+                
                 # adicionando na fila
                 queue.append(Item(int(data), self.conn))
                 print("Produzindo: ", data)
                 condition.notify()
                 condition.release()
                 time.sleep(random.random())
+            else: 
+            #     self.conn.close()
+                break
+
+TCP_IP = '0.0.0.0'
+TCP_PORT = 2004
 
 
-def Main():
-    threads = []
-    c = ConsumerThread(name='numbers')
-    c.start()
-    threads.append(c)
-    host = '0.0.0.0'
-    port = 2004
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((host, port))
-    print("Socket ligado a porta: ", port)
-    s.listen(5)
-    print("Ouvindo ...")
+tcpServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+tcpServer.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+tcpServer.bind((TCP_IP, TCP_PORT))
+threads = []
 
-    # loop infinito enquanto houver clientes
-    while True:
-        # estabelecendo conexão com o cliente
-        conn, addr = s.accept()
-        print('Connected to :', addr[0], ':', addr[1])
-        # Iniciando uma nova thread e retornando seu identificador
-        newthread = ProducerThread(conn, addr[0], addr[1])
-        newthread.start()
-        threads.append(newthread)
+c = ConsumerThread(name='numbers')
+c.start()
+threads.append(c)
 
-        for t in threads:
-            t.join()
+while True:
+    tcpServer.listen(5)
+    print("Servidor aguardando conexão de clientes...")
+    conn, addr = tcpServer.accept() 
+    print('Conectado em:', addr[0], ':', addr[1])
+    newthread = ProducerThread(conn, addr[0], addr[1])
+    newthread.start()
+    threads.append(newthread)
 
-        print('Sai da thread principal.')
-
-    s.close()
-
-
-if __name__ == '__main__':
-    Main()
+for t in threads:
+    t.join()
