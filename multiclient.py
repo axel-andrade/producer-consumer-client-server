@@ -3,20 +3,10 @@ from threading import Thread
 
 
 class ClientThread(Thread):
-    """
-    Classe que gera os clientes
-    """
-
     def __init__(self, c, server, port):
-        # Número de identificação do cliente
         self.c = c
-
-        # Servidor a ser conectado
         self.server = server
-
-        # Port para ser usada
         self.port = port
-
         Thread.__init__(self)
 
     def run(self):
@@ -32,14 +22,16 @@ class ClientThread(Thread):
         s.close()
 
 
-# Configurações de conexão do servidor
-# O nome do servidor pode ser o endereço de
-# IP ou o domínio (ola.python.net)
 host = '127.0.0.1'
 port = 2004
-
+threads = []
 # Nós spawnamos os clientes
 for c in range(20):
-    ClientThread(c, host, port).start()
+    t = ClientThread(c, host, port)
+    threads.append(t)
+    t.start()
+
+for t in threads:
+    t.join()
 
 print("Geramos todos os clientes")

@@ -32,13 +32,16 @@ class ConsumerThread(Thread):
                 print("Nada na fila, o consumidor está esperando")
                 condition.wait()
                 print("O produtor adicionou algo à fila e notificou o consumidor")
-            item = queue.pop(0)
-            print("Consumindo: ", item.data)
-            result = action(item.data)
-            time.sleep(random.random())
-            item.conn.send(str(result).encode('ascii'))
-            condition.notify()
-            condition.release()
+            try:
+                item = queue.pop(0)
+                print("Consumindo: ", item.data)
+                result = action(item.data)
+                time.sleep(random.random())
+                item.conn.send(str(result).encode('ascii'))
+                condition.notify()
+                condition.release()
+            except:
+                condition.wait()
 
 
 class ProducerThread(Thread):
@@ -56,17 +59,17 @@ class ProducerThread(Thread):
             data = data.decode('ascii')
             if len(data) > 0:
                 print("Servidor recebeu:", data)
-                condition.acquire()
-                if len(queue) == MAX_NUM:
-                    print("Fila cheia, o produtor está aguardando")
-                    condition.wait()
-                    print("Espaço na fila, consumidor notificou o produtor")
+                # condition.acquire()
+                # if len(queue) == MAX_NUM:
+                #     print("Fila cheia, o produtor está aguardando")
+                #     condition.wait()
+                #     print("Espaço na fila, consumidor notificou o produtor")
 
                 # adicionando na fila
                 queue.append(Item(int(data), self.conn))
                 print("Produzindo: ", data)
-                condition.notify()
-                condition.release()
+                # condition.notify()
+                # condition.release()
                 time.sleep(random.random())
             else:
                 #     self.conn.close()
