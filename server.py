@@ -35,10 +35,10 @@ class ConsumerThread(Thread):
             item = queue.pop(0)
             print("Consumindo: ", item.data)
             result = action(item.data)
+            time.sleep(random.random())
             item.conn.send(str(result).encode('ascii'))
             condition.notify()
             condition.release()
-            time.sleep(random.random())
 
 
 class ProducerThread(Thread):
@@ -61,16 +61,17 @@ class ProducerThread(Thread):
                     print("Fila cheia, o produtor está aguardando")
                     condition.wait()
                     print("Espaço na fila, consumidor notificou o produtor")
-                
+
                 # adicionando na fila
                 queue.append(Item(int(data), self.conn))
                 print("Produzindo: ", data)
                 condition.notify()
                 condition.release()
                 time.sleep(random.random())
-            else: 
-            #     self.conn.close()
+            else:
+                #     self.conn.close()
                 break
+
 
 TCP_IP = '0.0.0.0'
 TCP_PORT = 2004
@@ -81,15 +82,15 @@ tcpServer.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 tcpServer.bind((TCP_IP, TCP_PORT))
 threads = []
 
-c = ConsumerThread(name='numbers')
-c.start()
-threads.append(c)
-
 while True:
+
     tcpServer.listen(5)
     print("Servidor aguardando conexão de clientes...")
-    conn, addr = tcpServer.accept() 
+    conn, addr = tcpServer.accept()
     print('Conectado em:', addr[0], ':', addr[1])
+    c = ConsumerThread(name='numbers')
+    c.start()
+    threads.append(c)
     newthread = ProducerThread(conn, addr[0], addr[1])
     newthread.start()
     threads.append(newthread)
