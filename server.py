@@ -4,11 +4,11 @@ import time
 import random
 
 queue = []
-MAX_NUM = 3
 condition = Condition()
 
 
 def action(number):
+    time.sleep(random.randint(0, 20))
     return number * number
 
 
@@ -34,12 +34,11 @@ class ConsumerThread(Thread):
                 print("O produtor adicionou algo à fila e notificou o consumidor")
             try:
                 item = queue.pop(0)
-                print("Consumindo: ", item.data)
-                result = action(item.data)
-                time.sleep(random.random())
-                item.conn.send(str(result).encode('ascii'))
                 condition.notify()
                 condition.release()
+                print("Consumindo: ", item.data)
+                result = action(item.data)
+                item.conn.send((str(result)+" - Consumidor").encode('ascii'))
             except:
                 condition.wait()
 
@@ -59,17 +58,9 @@ class ProducerThread(Thread):
             data = data.decode('ascii')
             if len(data) > 0:
                 print("Servidor recebeu:", data)
-                # condition.acquire()
-                # if len(queue) == MAX_NUM:
-                #     print("Fila cheia, o produtor está aguardando")
-                #     condition.wait()
-                #     print("Espaço na fila, consumidor notificou o produtor")
-
                 # adicionando na fila
                 queue.append(Item(int(data), self.conn))
                 print("Produzindo: ", data)
-                # condition.notify()
-                # condition.release()
                 time.sleep(random.random())
             else:
                 #     self.conn.close()
@@ -86,17 +77,29 @@ tcpServer.bind((TCP_IP, TCP_PORT))
 threads = []
 
 while True:
-
     tcpServer.listen(5)
     print("Servidor aguardando conexão de clientes...")
     conn, addr = tcpServer.accept()
     print('Conectado em:', addr[0], ':', addr[1])
-    c = ConsumerThread(name='numbers')
-    c.start()
-    threads.append(c)
-    newthread = ProducerThread(conn, addr[0], addr[1])
-    newthread.start()
-    threads.append(newthread)
+    if(random.randint(0, 1)):
+        try:
+            print("Rodando localmente ... ")
+            data = conn.recv(2048)
+            data = int(data.decode('ascii'))
+            result = data * data
+            conn.send((str(result)+" - Local").encode('ascii'))
+        except Exception as e:
+            pass
+        finally:
+            conn.close()
+
+    else:
+        c = ConsumerThread(name='numbers')
+        c.start()
+        threads.append(c)
+        newthread = ProducerThread(conn, addr[0], addr[1])
+        newthread.start()
+        threads.append(newthread)
 
 for t in threads:
     t.join()
